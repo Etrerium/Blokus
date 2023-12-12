@@ -1,0 +1,539 @@
+import os
+
+nb_tours = 0
+
+joueurs = ["A", "B", "C", "D"]
+
+pieces = [
+    [(0, 0)],
+    [(0, 0), (1, 0)],
+    [(0, 0), (1, 0), (2, 0)],
+    [(0, 0), (1, 0), (1, 1)],
+    [(0, 0), (1, 0), (2, 0), (3, 0)],
+    [(0, 0), (0, 1), (-1, 1), (-2, 1)],
+    [(0, 0), (1, 0), (2, 0), (1, 1)],
+    [(0, 0), (0, 1), (1, 0), (1, 1)],
+    [(0, 0), (0, 1), (1, 1), (1, 2)],
+    [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)],
+    [(0, 0), (0, 1), (-1, 1), (-2, 1), (-3, 1)],
+    [(0, 0), (-1, 0), (-1, 1), (-2, 1), (-3, 1)],
+    [(0, 0), (0, 1), (-1, 0), (-1, 1), (-2, 1)],
+    [(0, 0), (0, 1), (1, 1), (2, 1), (2, 0)],
+    [(0, 0), (1, 0), (1, 1), (2, 0), (3, 0)],
+    [(0, 0), (1, 0), (2, 0), (2, -1), (2, 1)],
+    [(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)],
+    [(0, 0), (0, 1), (1, 1), (1, 2), (2, 2)],
+    [(0, 0), (1, 0), (1, 1), (1, 2), (2, 2)],
+    [(0, 0), (1, 0), (1, 1), (1, 2), (2, 1)],
+    [(0, 0), (1, 0), (2, 0), (1, -1), (1, 1)]]
+
+## Pièces restantes pour chaque joueur
+pieces_joueurs = [[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+                  [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+                  [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+                  [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]]
+
+
+
+def init_plateau(plateau):
+    for ligne in range(21):
+        for colonne in range(21):
+            plateau[ligne][colonne] = '   '
+
+    for colonne in range(10):
+        plateau[0][colonne] = "  " + str(colonne)
+
+    for colonne in range(10,22):
+        plateau[0][colonne] = " " + str(colonne)
+
+    for ligne in range(21):
+        plateau[ligne][0] = "  " + str(ligne)
+
+
+
+def affiche_plateau(plateau):
+    for ligne in range(21):
+        for colonne in range(21):
+            print(plateau[ligne][colonne], end="")
+        print(" ")
+
+
+
+### Choix du coin de départ
+def coin_départ(joueur_actuel):
+    coin_choisi = str(input("Choisir un coin de départ [ HG / HD / BG / BD ]: "))
+   
+    if coin_choisi == "HG":
+        piece = choix_piece(joueur_actuel)
+        rotation = int(input("⪧ Rotation [O-3] : "))
+        miroir = input("⪧ Miroir [oui/non] : ").lower() == "oui"
+        placer_piece_init(joueur_actuel, piece, 1, 1, rotation, miroir)
+
+    if coin_choisi == "HD":
+        piece = choix_piece(joueur_actuel)
+        rotation = int(input("⪧ Rotation [O-3] : "))
+        miroir = input("⪧ Miroir [oui/non] : ").lower() == "oui"
+        placer_piece_init(joueur_actuel, piece, 1, 20, rotation, miroir)
+
+    if coin_choisi == "BG":
+        piece = choix_piece(joueur_actuel)
+        rotation = int(input("⪧ Rotation [O-3] : "))
+        miroir = input("⪧ Miroir [oui/non] : ").lower() == "oui"
+        placer_piece_init(joueur_actuel, piece, 20, 1, rotation, miroir)
+
+    if coin_choisi == "BD":
+        piece = choix_piece(joueur_actuel)
+        rotation = int(input("⪧ Rotation [O-3] : "))
+        miroir = input("⪧ Miroir [oui/non] : ").lower() == "oui"
+        placer_piece_init(joueur_actuel, piece, 20, 20, rotation, miroir)
+       
+    #else :
+        #print("Invalide, choisir à nouveau !")
+        #coin_départ(joueur_actuel)
+
+
+
+### Placement des pièces dans les coins (1er tour de chaque joueur)
+def placer_piece_init(joueur, piece, x, y, rotation=0, miroir=False):
+    joueur_actuel = joueurs[joueur]
+    placer = True
+    plateau_temp = [row[:] for row in plateau]   # Copie temporaire du plateau
+    piece_actuelle = piece[:]
+
+    # Appliquer la rotation
+    for _ in range(rotation):
+        piece_actuelle = [(y, -x) for (x, y) in piece_actuelle]
+   
+    # Appliquer miroir si choisi
+    if miroir:
+        piece_actuelle = [(x, -y) for (x, y) in piece_actuelle]
+
+    ## Placement de la pièce
+    for (dx, dy) in piece_actuelle:
+        nv_x = x + dx
+        nv_y = y + dy
+       
+        ## Vérifier que les cases où la pièce va être placée sont disponibles
+        if (
+            0 < nv_x < 21 and
+            0 < nv_y < 21 and
+            plateau_temp[nv_x][nv_y] == "   "
+        ):
+            plateau_temp[nv_x][nv_y] = "  " + joueur_actuel
+        else:
+            placer = False
+            break
+   
+    ## Si les emplacements sont disponibles, placer la pièce
+    if placer:
+        for i in range(21):
+            for j in range(21):
+                plateau[i][j] = plateau_temp[i][j]   # Mettre à jour le plateau
+    # On a déjà une fonction pour tout ça...
+    else:
+        print("Impossible de placer la pièce ici !\n")
+        coin_choisi = str(input("Choisir un autre coin [HG / HD / BG / BD]: "))
+       
+        if coin_choisi == "HG":
+            choix_piece = int(input("Choisir la pièce : "))
+            piece = pieces[choix_piece - 1]
+   
+            affiche_options_piece(piece)
+
+            rotation = int(input("Rotation [0-3] : "))
+            miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+            placer_piece_init(joueur, piece, 1, 1, rotation, miroir)
+        if coin_choisi == "HD":
+            choix_piece = int(input("Choisir la pièce : "))
+            piece = pieces[choix_piece - 1]
+   
+            affiche_options_piece(piece)
+
+            rotation = int(input("Rotation [O-3] : "))
+            miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+            placer_piece_init(joueur, piece, 1, 20, rotation, miroir)
+        if coin_choisi == "BG":
+            choix_piece = int(input("Choisir la pièce : "))
+            piece = pieces[choix_piece - 1]
+   
+            affiche_options_piece(piece)
+
+            rotation = int(input("Rotation [O-3] : "))
+            miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+            placer_piece_init(joueur, piece, 20, 1, rotation, miroir)
+           
+        if coin_choisi == "BD":
+            choix_piece = int(input("Choisir la pièce : "))
+            piece = pieces[choix_piece - 1]
+   
+            affiche_options_piece(piece)
+
+            rotation = int(input("Rotation [O-3] : "))
+            miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+            placer_piece_init(joueur, piece, 20, 20, rotation, miroir)
+
+
+
+### Processus de choix de la pièce à jouer
+def choix_piece(joueur):
+    ## Affichage des pièces restantes pour le joueur actuel
+    print("Vos pièces restantes sont :\n")
+   
+    # On regarde si l'index des pièces dans la liste pièces se trouve dans la liste des pièces restantes du joueur
+    for piece in range(len(pieces)) :
+        if piece in pieces_joueurs[joueur] :  
+            print(f"◄ n° {piece} ►\n")
+           
+            min_x = min(x for x, y in pieces[piece])
+            max_x = max(x for x, y in pieces[piece])
+            min_y = min(y for x, y in pieces[piece])
+            max_y = max(y for x, y in pieces[piece])
+
+            for x in range(min_x, max_x +1):
+                ligne = ""
+                for y in range(min_y, max_y + 1):
+                    if (x, y) in pieces[piece]:
+                        ligne += "X "
+                    else:
+                        ligne += "  "
+                print(ligne)
+            print("____________")
+            print()
+   
+    ## Choix de la pièce ##
+    piece_choisie = int(input("\nChoisir la pièce : "))
+   
+    # Vérifier si la pièce choisie est disponible
+    if piece_choisie in pieces_joueurs[joueur] :
+        pieces_joueurs[joueur].remove(piece_choisie)   # Retirer la pièce dans la liste des pièces restantes du joueur car cell-ci n'est plus disponible
+        affiche_options_piece(pieces[piece_choisie])
+        return pieces[piece_choisie]
+
+    else:
+        print("\n‼ Pièce déjà utilisée, choisir à nouveau ‼\n")
+        choix_piece(joueur)
+
+
+
+### Afficher les options rotation/miroir des pièces
+def affiche_options_piece(piece):
+    print("Options de la pièce :")
+
+    ## PARTIE SANS MIROIR ##
+    for i in range(4):  # Pour chaque rotation de 0 à 3  
+        print(f"↺↻↷ Rotation {i} | ◑ Miroir Off:")
+        min_x = min(x for x, y in piece)
+        max_x = max(x for x, y in piece)
+        min_y = min(y for x, y in piece)
+        max_y = max(y for x, y in piece)
+        for x in range(min_x, max_x +1):
+            ligne = ""
+            for y in range(min_y, max_y + 1):
+                if (x, y) in piece:
+                    ligne += "X "
+                else:
+                    ligne += "  "
+            print(ligne)
+        print()
+       
+        piece = [(y, -x) for (x, y) in piece]   # Effectuer une rotation de la pièce pour la prochaine itération
+
+    ## PARTIE AVEC MIROIR ##
+    for i in range(4):  # Pour chaque rotation de 0 à 3
+        print(f"↺↻↷ Rotation {i} | ◑ Miroir On:")
+        min_x = min(x for x, y in piece)
+        max_x = max(x for x, y in piece)
+        min_y = min(y for x, y in piece)
+        max_y = max(y for x, y in piece)
+        for x in range(min_x, max_x +1):
+            ligne = ""
+            for y in range(max_y, min_y -1 , -1):
+                if (x, y) in piece:
+                    ligne += "X "
+                else:
+                    ligne += "  "
+            print(ligne)
+        print()
+       
+        piece = [(y, -x) for (x, y) in piece]   # Effectuer une rotation de la pièce pour la prochaine itération
+
+
+
+def placer_piece(joueur, piece, x, y, rotation=0, miroir=False):
+    joueur_actuel = joueurs[joueur]
+    placer = True
+    plateau_temp = [row[:] for row in plateau]   # Faire une copie temporaire du plateau
+    piece_actuelle = piece[:]
+
+    # Récupérer les coordonnées de toutes les pièces placées par le joueur
+    pieces_joueur_existants = [(i, j) for i in range(21) for j in range(21) if plateau[i][j] == "  " + joueur_actuel]
+
+    # Vérifier si le joueur a déjà au moins une pièce sur le plateau
+    if pieces_joueur_existants:
+        # Si le joueur a déjà une pièce, vérifier si la nouvelle pièce est placée dans le coin de chacune de ses pièces
+        coin_adjacent = False
+        for (dx, dy) in piece:
+            nv_x = x + dx
+            nv_y = y + dy
+            for (ex, ey) in pieces_joueur_existants:
+                if (
+                    0 < nv_x < 21 and
+                    0 < nv_y < 21 and
+                    (nv_x, nv_y) in [
+                        (ex - 1, ey - 1),
+                        (ex - 1, ey + 1),
+                        (ex + 1, ey - 1),
+                        (ex + 1, ey + 1)
+                    ]
+                ):
+                    coin_adjacent = True
+                    break
+
+            if not coin_adjacent:
+                print("La nouvelle pièce doit être placée dans le coin de chacune de vos pièces existantes !\n")
+                affiche_plateau(plateau)
+                x = int(input("Entrer la ligne : "))
+                y = int(input("Entrer la colonne : "))
+                choix_piece = int(input("Choisir la pièce : "))
+                piece = pieces[choix_piece]
+                affiche_options_piece(piece)
+                rotation = int(input("Rotation [0-3] : "))
+                miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+                piece = pieces[choix_piece]
+                placer_piece(joueur, piece, x, y, rotation, miroir)
+                return False
+
+        # Vérifier si le reste de la pièce ne touche pas les côtés d'une pièce existante
+        for (dx, dy) in piece:
+            nv_x = x + dx
+            nv_y = y + dy
+            for (ex, ey) in pieces_joueur_existants:
+                if (
+                    0 < nv_x < 21 and
+                    0 < nv_y < 21 and
+                    plateau[nv_x][nv_y] == "  " + joueur_actuel
+                ):
+                    print("Le reste de la pièce ne peut pas toucher les côtés d'une de vos pièces existantes !\n")
+                    affiche_plateau(plateau)
+                    x = int(input("Entrer la ligne : "))
+                    y = int(input("Entrer la colonne : "))
+                    choix_piece = int(input("Choisir la pièce : "))
+                    affiche_options_piece(piece)
+                    rotation = int(input("Rotation [0-3] : "))
+                    miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+                    piece = pieces[choix_piece]
+                    placer_piece(joueur, piece, x, y, rotation, miroir)
+                    return False
+
+
+
+   
+    ## Appliquer la rotation
+    for _ in range(rotation):
+        piece_actuelle = [(y, -x) for (x, y) in piece_actuelle]
+
+    if miroir:
+        piece_actuelle = [(x, -y) for (x, y) in piece_actuelle]
+
+    for (dx, dy) in piece_actuelle:
+        nv_x = x + dx
+        nv_y = y + dy
+       
+        if (
+            0 < nv_x < 21 and
+            0 < nv_y < 21 and
+            plateau_temp[nv_x][nv_y] == "   "
+        ):
+            plateau_temp[nv_x][nv_y] = "  " + joueur_actuel
+        else:
+            placer = False
+            break
+
+    if placer:
+        for i in range(21):
+            for j in range(21):
+                plateau[i][j] = plateau_temp[i][j]  # Mettre à jour le plateau
+        return True
+    else:
+        print("‼ Impossible de placer la pièce ici ‼\n")
+        affiche_plateau(plateau)
+        x = int(input("Entrer la ligne : "))
+        y = int(input("Entrer la colonne : "))
+        choix_piece = int(input("Choisir la pièce : "))
+        affiche_options_piece(piece)
+        rotation = int(input("Rotation [0-3] : "))
+        miroir = input("Pièce en Miroir (oui/non) : ").lower() == "oui"
+        piece = pieces[choix_piece]
+        placer_piece(joueur, piece, x, y, rotation, miroir)
+
+
+
+##### MAIN #####
+
+os.system("cls")
+plateau = [[' ' for i in range(22)] for j in range(22)]
+
+nbe_joueurs = int(input("Entrer le nombre de joueurs [2 ou 4] : "))
+print()
+init_plateau(plateau)
+affiche_plateau(plateau)
+joueur_actuel = 0
+joueur_actuel_affiche = 0
+abandon_joueurs = [0,1,2,3]
+
+### Pour les 4 premiers tours, choix des coins de départ ###
+if nbe_joueurs == 4:
+    for i in range(4) :
+        print(f"\n◆ AU TOUR DU JOUEUR {joueur_actuel+1} ◆")
+        coin_départ(joueur_actuel)
+        affiche_plateau(plateau)
+        joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+        nb_tours += 0.25
+        os.system("cls")
+        affiche_plateau(plateau)
+
+    while abandon_joueurs != []:   # Tant que que tous les joueurs n'ont pas abandonnés
+        print(f"\n◆ AU TOUR DU JOUEUR {joueur_actuel+1} ◆")
+
+        ### Vérifier si le joueur avait abandonné ou non
+        if joueur_actuel in abandon_joueurs :
+            abandon = str(input("Pouvez-vous encore placer une pièce ? [oui/non] : "))
+           
+            ##
+            if abandon.lower() == "non" :
+                abandon_joueurs.remove(joueur_actuel)
+                joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+                nb_tours += 0.25
+                os.system("cls")
+            else:
+                print()
+                affiche_plateau(plateau)
+
+                x = int(input("\n⪧ Entrer la ligne : "))
+                y = int(input("⪧ Entrer la colonne : "))
+
+                piece = choix_piece(joueur_actuel)            
+                rotation = int(input("⪧ Rotation [0-3] : "))
+                miroir = input("⪧ Miroir [oui/non] : ").lower() == "oui"
+
+                placer_piece(joueur_actuel, piece, x, y, rotation, miroir)
+                affiche_plateau(plateau)
+                joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+                nb_tours += 0.25
+                os.system("cls")
+                affiche_plateau(plateau)
+        else:
+            print(f"Le joueur {joueur_actuel+1} a abandonné, il ne peut plus jouer.\nLe jeu continue sans lui...")
+            joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+            nb_tours += 0.25
+
+if nbe_joueurs == 2:
+    for i in range(4) :
+        print(f"\n◆ AU TOUR DU JOUEUR {joueur_actuel_affiche+1} - avec les pièces {joueurs[joueur_actuel]} ◆")
+        coin_départ(joueur_actuel)
+        affiche_plateau(plateau)
+        joueur_actuel_affiche = (joueur_actuel + 1) % 2
+        joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+        nb_tours += 0.25
+        os.system("cls")
+        affiche_plateau(plateau)
+       
+    while abandon_joueurs != []:
+        print(f"\n◆ AU TOUR DU JOUEUR {joueur_actuel_affiche+1} - avec les pièces {joueurs[joueur_actuel]} ◆")
+
+        ## Demander au joueur s'il peut encore jouer ##
+        if joueur_actuel in abandon_joueurs :
+            abandon = str(input("Pouvez-vous encore placer une pièce ? [oui/non] : "))
+
+            if abandon.lower() == "non" :
+                abandon_joueurs.remove(joueur_actuel)
+                joueur_actuel_affiche = (joueur_actuel + 1) % 2
+                joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+                nb_tours += 0.25
+                os.system("cls")
+            else:
+                print()
+                affiche_plateau(plateau)
+
+                x = int(input("\n⪧ Entrer la ligne : "))
+                y = int(input("⪧ Entrer la colonne : "))
+
+                piece = choix_piece(joueur_actuel)            
+                rotation = int(input("⪧ Rotation [0-3] : "))
+                miroir = input("⪧ Miroir [oui/non] : ").lower() == "oui"
+
+                placer_piece(joueur_actuel, piece, x, y, rotation, miroir)
+                affiche_plateau(plateau)
+                joueur_actuel_affiche = (joueur_actuel + 1) % 2
+                joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+                nb_tours += 0.25
+                os.system("cls")
+                affiche_plateau(plateau)
+
+        else:
+            print(f"Le joueur {joueur_actuel+1} a abandonné, il ne peut plus jouer.\nLe jeu continue sans lui...")
+            joueur_actuel_affiche = (joueur_actuel + 1) % 2
+            joueur_actuel = (joueur_actuel + 1) % len(joueurs)
+            nb_tours += 0.25
+
+## joueur 1
+pts_1 =0
+for piece_fin in pieces_joueurs[0]:
+    pts_1 -= len(pieces[piece_fin])
+    if pts_1 == 0 :
+        pts_1 += 15
+
+pts_2 =0
+for piece_fin in pieces_joueurs[1]:
+    pts_2 -= len(pieces[piece_fin])
+    if pts_2 == 0 :
+        pts_2 += 15
+
+pts_3 =0
+for piece_fin in pieces_joueurs[2]:
+    pts_3 -= len(pieces[piece_fin])
+    if pts_3 == 0 :
+        pts_3 += 15
+
+pts_4 =0
+for piece_fin in pieces_joueurs[3]:
+    pts_4 -= len(pieces[piece_fin])
+    if pts_4 == 0 :
+        pts_4 += 15
+
+affiche_plateau(plateau)
+print(f"⫷  Le jeu a duré {nb_tours} tour.s ⫸")
+
+
+### AFFICHAGE POINTS ###
+print("POINTS\n")
+if nbe_joueurs == 4 :
+    print(f"Joueur 1 : {pts_1}")
+    print(f"Joueur 2 : {pts_2}")
+    print(f"Joueur 3 : {pts_3}")
+    print(f"Joueur 4 : {pts_4}")
+
+    max_value = max(pts_1,pts_2,pts_3,pts_4)
+
+    if max_value == pts_1:
+        print(f"Joueur 1 a gagné avec {pts_1} points !")
+    if max_value == pts_2:
+        print(f"Joueur 2 a gagné avec {pts_2} points !")
+    if max_value == pts_3:
+        print(f"Joueur 3 a gagné avec {pts_3} points !")
+    if max_value == pts_4:
+        print(f"Joueur 4 a gagné avec {pts_4} points !")
+
+
+if nbe_joueurs == 2 :
+    print(f"Joueur 1 : {pts_1+pts_3}")
+    print(f"Joueur 2 : {pts_2+pts_4}")
+
+    max_value = max(pts_1+pts_3 , pts_2+pts_4)
+
+    if max_value == pts_1+pts_3:
+        print(f"Joueur 1 a gagné avec {pts_1+pts_3} points !")
+    if max_value == pts_2+pts_4:
+        print(f"Joueur 2 a gagné avec {pts_2+pts_4} points !")
+
+#gagnant
